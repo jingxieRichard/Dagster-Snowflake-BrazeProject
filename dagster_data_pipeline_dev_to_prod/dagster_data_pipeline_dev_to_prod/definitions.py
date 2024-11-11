@@ -1,0 +1,89 @@
+import os
+from dotenv import load_dotenv
+
+from .resources import build_snowflake_session
+
+from dagster import Definitions, EnvVar
+from dagster_snowflake_pandas import SnowflakePandasIOManager
+from dagster_snowflake import SnowflakeResource 
+
+from dagster_data_pipeline_dev_to_prod.assets.braze_data.processor import load_data, aggregate_braze_user_events, sf_table_statistics
+
+from .constants import *
+
+
+
+load_dotenv()
+
+# Get deployment name from environment variable: local or production
+deployment_name = os.getenv("DAGSTER_DEPLOYMENT", "local")
+
+SHARED_SF_CONFIG = {
+    "account": EnvVar("SNOWFLAKE_ACCOUNT").get_value(),
+    "user": EnvVar("SNOWFLAKE_USER").get_value(),
+    "password": EnvVar("SNOWFLAKE_PASSWORD").get_value()
+}
+LOCAL_SF_CONFIG = {**SHARED_SF_CONFIG, 
+                   **{"warehouse": SNOWFLAKE_DEV_WAREHOUSE,
+                    "role": SNOWFLAKE_DEV_ROLE, 
+                    "database": SNOWFLAKE_DEV_DATABASE, 
+                    "schema": RAW_SCHEMA}}
+
+PROD_SF_CONFIG = {**SHARED_SF_CONFIG, 
+                   **{"warehouse": SNOWFLAKE_PROD_WAREHOUSE,
+                    "role": SNOWFLAKE_PROD_ROLE, 
+                    "database": SNOWFLAKE_PROD_DATABASE, 
+                    "schema": RAW_SCHEMA}}
+
+resource_defs = {
+    "local": {
+        "snowflake_snowpark_session": build_snowflake_session(LOCAL_SF_CONFIG),
+        "snowflake_io_manager": SnowflakePandasIOManager(
+            account=LOCAL_SF_CONFIG["account"],
+            user=LOCAL_SF_CONFIG["user"],
+            password=LOCAL_SF_CONFIG["password"],
+            warehouse=LOCAL_SF_CONFIG["warehouse"],
+            role=LOCAL_SF_CONFIG["role"],
+            database=LOCAL_SF_CONFIG["database"],
+            schema=LOCAL_SF_CONFIG["schema"],
+        ),
+        "snowflake_resource": SnowflakeResource(
+            account=LOCAL_SF_CONFIG["account"],
+            user=LOCAL_SF_CONFIG["user"],
+            password=LOCAL_SF_CONFIG["password"],
+            warehouse=LOCAL_SF_CONFIG["warehouse"],
+            role=LOCAL_SF_CONFIG["role"],
+            database=LOCAL_SF_CONFIG["database"],
+            schema=LOCAL_SF_CONFIG["schema"],
+        ),
+    },
+   
+    "production": {
+        "snowflake_snowpark_session": build_snowflake_session(PROD_SF_CONFIG),
+        "snowflake_io_manager": SnowflakePandasIOManager(
+            account=PROD_SF_CONFIG["account"],
+            user=PROD_SF_CONFIG["user"],
+            password=PROD_SF_CONFIG["password"],
+            warehouse=PROD_SF_CONFIG["warehouse"],
+            role=PROD_SF_CONFIG["role"],
+            database=PROD_SF_CONFIG["database"],
+            schema=PROD_SF_CONFIG["schema"],
+        ),
+        "snowflake_resource": SnowflakeResource(
+           account=PROD_SF_CONFIG["account"],
+            user=PROD_SF_CONFIG["user"],
+            password=PROD_SF_CONFIG["password"],
+            warehouse=PROD_SF_CONFIG["warehouse"],
+            role=PROD_SF_CONFIG["role"],
+            database=PROD_SF_CONFIG["database"],
+            schema=PROD_SF_CONFIG["schema"],
+        )
+    },
+}
+
+
+
+defs = Definitions(
+    assets=[load_data, aggregate_braze_user_events, sf_table_statistics],
+    resources=resource_defs[deployment_name],
+)
