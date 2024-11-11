@@ -13,7 +13,7 @@ BZ_USER_PURCHASE_TABLE = "BRAZE_USER_EVENT_DEMO_DATASET.PUBLIC.USERS_BEHAVIORS_P
 BZ_USER_BEHAVIOR_TABLE = "BRAZE_USER_EVENT_DEMO_DATASET.PUBLIC.USERS_BEHAVIORS_CUSTOMEVENT_VIEW"
 
 @dataclass
-class BrazeDataSet:
+class BrazeDataset:
     raw_user_sends: DataFrame
     raw_user_impressions: DataFrame
     raw_user_clicks: DataFrame
@@ -34,7 +34,7 @@ class BrazeDataProcessor:
         self.src_schema = src_schema
         self.dst_database = dst_database 
         self.dst_schema = dst_schema
-        self.data = BrazeDataSet(
+        self.data = BrazeDataset(
             raw_user_sends=None,
             raw_user_impressions=None,
             raw_user_clicks=None,
@@ -45,12 +45,12 @@ class BrazeDataProcessor:
 
     
     def run(self) -> None:
-        self.load_raw_bz_events()
+        self.extract()
         self.load_to_sf_table()
         self.transform()
-        self.load_agg_user_events()
+        self.load()
 
-    def load_raw_bz_events(self):
+    def extract(self):
         """Load the raw Braze user events from Braze Demo Database"""
 
         COLUMNS = ["USER_ID", "TIME", "CONTENT_CARD_ID", "CAMPAIGN_ID"]
@@ -97,6 +97,6 @@ class BrazeDataProcessor:
                   .join(agg_user_purchases, "USER_ID", "outer"))
         
     
-    def load_agg_user_events(self):
+    def load(self):
         """Write the aggregated user events to Snowflake Destination DB """
         self.agg_user_events.write.mode("overwrite").save_as_table(f"{self.dst_database}.{self.dst_schema}.agg_user_events")

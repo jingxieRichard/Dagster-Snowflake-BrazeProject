@@ -1,4 +1,5 @@
 from .braze_user_data import BrazeDataProcessor
+from .popularity import CampaignPopularityProcessor
 
 from dagster import MaterializeResult, asset, AssetCheckExecutionContext
 from dagster_data_pipeline_dev_to_prod.constants import * 
@@ -58,7 +59,7 @@ def aggregate_braze_user_events(context) -> None:
 
 # Collect some statistics of the aggregated_user_events 
 @asset(
-        deps=[aggregate_braze_user_events],
+        deps={"aggregate_braze_user_events"},
         required_resource_keys={"snowflake_resource"},
 )
 def sf_table_statistics(context) -> MaterializeResult:
@@ -98,4 +99,20 @@ def sf_table_statistics(context) -> MaterializeResult:
             "user_min_clicks": min_clicks}
     )
 
-    
+
+# A data pipeline to aggregate Braze demo user events 
+@asset(
+        deps={"aggregate_braze_user_events"},
+        required_resource_keys={"snowflake_snowpark_session"},
+)
+def compute_campaign_popularity(context) -> None:
+    session = context.resources.snowflake_snowpark_session
+    db_name = session.sql("SELECT CURRENT_DATABASE()").collect()[0][0]
+    campaign_popularity_processor = CampaignPopularityProcessor(session=session, 
+                                           src_database=db_name,
+                                           src_schema=RAW_SCHEMA,
+                                           dst_database=db_name,
+                                           dst_schema=PROCESSED_SCHEMA)
+    campaign_popularity_processor.run()
+    print("Compute campaign popularity has been done successfully!")
+
