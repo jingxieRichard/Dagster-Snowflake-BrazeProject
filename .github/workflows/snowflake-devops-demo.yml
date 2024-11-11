@@ -1,0 +1,39 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    tags:
+      - 'v*'  # Any tag starting with "v"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set environment variables based on branch
+        if: github.ref == 'refs/heads/main'  # For the production branch
+        run: echo "DAGSTER_DEPLOYMENT=prod" >> $GITHUB_ENV
+
+      - name: Set environment variables for dev
+        if: github.ref == 'refs/heads/dev'  # For the development branch
+        run: echo "DAGSTER_DEPLOYMENT=dev" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Run deployment script
+        env:
+          DAGSTER_DEPLOYMENT: ${{ env.DAGSTER_DEPLOYMENT }}
+        run: |
+          # Example script that uses the deployment environment
+          echo "Deploying to $DAGSTER_DEPLOYMENT"
+          # Your deployment commands go here
