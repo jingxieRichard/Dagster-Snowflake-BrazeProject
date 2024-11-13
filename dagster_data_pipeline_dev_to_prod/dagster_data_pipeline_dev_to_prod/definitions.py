@@ -5,6 +5,8 @@ from .resources import build_snowflake_session
 
 from dagster import (Definitions, 
                      EnvVar, 
+                     ScheduleDefinition,
+                     define_asset_job, 
                      )
 
 from dagster_snowflake import SnowflakeResource 
@@ -66,8 +68,21 @@ resource_defs = {
     },
 }
 
+# Define the Braze data job 
+braze_data_job = define_asset_job(
+    name="braze_data_pipeline",
+    assets=[load_data, aggregate_braze_user_events, sf_table_statistics, compute_campaign_popularity]
+)
+# Add hourly refresh schedule 
+hourly_refresh_schedule = ScheduleDefinition(
+    job=braze_data_job,
+    cron_schedule="*/10 * * * *"  # Cron schedule to run the job every 10 minutes
+)
+
+
 
 defs = Definitions(
     assets=[load_data, aggregate_braze_user_events, sf_table_statistics, compute_campaign_popularity],
     resources=resource_defs[deployment_name],
+    schedules=[hourly_refresh_schedule]
 )
