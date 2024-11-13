@@ -55,3 +55,6 @@ uritemplate==4.1.1
 urllib3==2.2.3
 watchdog==5.0.3
 wcwidth==0.2.13
+snowflake
+snowflake-snowpark-python
+dagster_snowflake

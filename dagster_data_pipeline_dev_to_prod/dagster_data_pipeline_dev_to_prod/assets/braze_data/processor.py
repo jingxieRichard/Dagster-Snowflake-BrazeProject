@@ -8,6 +8,7 @@ from dagster_data_pipeline_dev_to_prod.constants import *
 
 @asset(
         required_resource_keys={"snowflake_resource"},
+        key_prefix=["braze"],
 )
 def load_data(context) -> MaterializeResult: 
     query = """
@@ -44,6 +45,7 @@ def load_data(context) -> MaterializeResult:
 # A data pipeline to aggregate Braze demo user events 
 @asset(
         required_resource_keys={"snowflake_snowpark_session"},
+        key_prefix=["braze"],
 )
 def aggregate_braze_user_events(context) -> None:
     session = context.resources.snowflake_snowpark_session
@@ -61,6 +63,7 @@ def aggregate_braze_user_events(context) -> None:
 @asset(
         deps={"aggregate_braze_user_events"},
         required_resource_keys={"snowflake_resource"},
+        key_prefix=["braze"],
 )
 def sf_table_statistics(context) -> MaterializeResult:
     
@@ -104,6 +107,7 @@ def sf_table_statistics(context) -> MaterializeResult:
 @asset(
         deps={"aggregate_braze_user_events"},
         required_resource_keys={"snowflake_snowpark_session"},
+        key_prefix=["braze"],
 )
 def compute_campaign_popularity(context) -> None:
     session = context.resources.snowflake_snowpark_session

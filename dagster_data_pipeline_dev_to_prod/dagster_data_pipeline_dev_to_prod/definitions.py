@@ -7,6 +7,7 @@ from dagster import (Definitions,
                      EnvVar, 
                      ScheduleDefinition,
                      define_asset_job, 
+                     AssetSelection
                      )
 
 from dagster_snowflake import SnowflakeResource 
@@ -68,11 +69,13 @@ resource_defs = {
     },
 }
 
-# Define the Braze data job 
+
+# Define Braze data job
 braze_data_job = define_asset_job(
-    name="braze_data_pipeline",
-    assets=[load_data, aggregate_braze_user_events, sf_table_statistics, compute_campaign_popularity]
+    name="braze_data_job",
+    selection=[load_data, aggregate_braze_user_events, sf_table_statistics, compute_campaign_popularity]
 )
+
 # Add hourly refresh schedule 
 hourly_refresh_schedule = ScheduleDefinition(
     job=braze_data_job,
