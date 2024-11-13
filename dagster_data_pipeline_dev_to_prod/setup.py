@@ -8,11 +8,12 @@ setup(
         "dagster-cloud",
         "pandas",
         "requests",
+        "dagster-snowflake",
         "snowflake-connector-python[pandas]",
         "dagster-snowflake-pandas",
         "matplotlib",
         "python-dotenv",
         "snowflake-snowpark-python",
     ],
-    extras_require={"dev": ["dagster-webserver", "pytest"]},
+    extras_require={"dev": ["dagster-webserver", "pytest"], "tests": ["mypy", "pylint", "pytest"]},
 )
