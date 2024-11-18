@@ -19,6 +19,10 @@ class BrazeDataset:
     raw_user_clicks: DataFrame
     raw_user_purchases: DataFrame
     raw_user_behaviors: DataFrame
+    user_sends: DataFrame
+    user_impressions: DataFrame
+    user_clicks: DataFrame
+    user_purchases: DataFrame
     agg_user_events: DataFrame
 
 
@@ -40,6 +44,10 @@ class BrazeDataProcessor:
             raw_user_clicks=None,
             raw_user_purchases=None,
             raw_user_behaviors=None,
+            user_sends=None,
+            user_impressions=None,
+            user_clicks=None,
+            user_purchases=None,
             agg_user_events=None
         )
 
@@ -77,21 +85,21 @@ class BrazeDataProcessor:
 
     def transform(self):
         """ Aggregate user events """
-        user_sends = self.session.table(f"{self.src_database}.{self.src_schema}.USER_SENDS")
-        user_impressions = self.session.table(f"{self.src_database}.{self.src_schema}.USER_IMPRESSIONS")
-        user_clicks = self.session.table(f"{self.src_database}.{self.src_schema}.USER_CLICKS")
-        user_purchases = self.session.table(f"{self.src_database}.{self.src_schema}.USER_PURCHASES")
+        self.data.user_sends = self.session.table(f"{self.src_database}.{self.src_schema}.USER_SENDS")
+        self.data.user_impressions = self.session.table(f"{self.src_database}.{self.src_schema}.USER_IMPRESSIONS")
+        self.data.user_clicks = self.session.table(f"{self.src_database}.{self.src_schema}.USER_CLICKS")
+        self.data.user_purchases = self.session.table(f"{self.src_database}.{self.src_schema}.USER_PURCHASES")
 
-        agg_user_sends = (user_sends
+        agg_user_sends = (self.data.user_sends
                           .group_by("USER_ID").agg(F.count("*").alias("Number_sends")))
-        agg_user_impressions = (user_impressions
+        agg_user_impressions = (self.data.user_impressions
                                 .group_by("USER_ID").agg(F.count("*").alias("Number_impressions")))
-        agg_user_clicks = (user_clicks
+        agg_user_clicks = (self.data.user_clicks
                            .group_by("USER_ID").agg(F.count("*").alias("Number_clicks")))
-        agg_user_purchases = (user_purchases
+        agg_user_purchases = (self.data.user_purchases
                               .group_by("USER_ID").agg(F.count("*").alias("Number_purchases")))
         
-        self.agg_user_events = (agg_user_sends
+        self.data.agg_user_events = (agg_user_sends
                   .join(agg_user_impressions, "USER_ID", "outer")
                   .join(agg_user_clicks, "USER_ID", "outer")
                   .join(agg_user_purchases, "USER_ID", "outer"))
@@ -99,4 +107,4 @@ class BrazeDataProcessor:
     
     def load(self):
         """Write the aggregated user events to Snowflake Destination DB """
-        self.agg_user_events.write.mode("overwrite").save_as_table(f"{self.dst_database}.{self.dst_schema}.agg_user_events")
+        self.data.agg_user_events.write.mode("overwrite").save_as_table(f"{self.dst_database}.{self.dst_schema}.agg_user_events")

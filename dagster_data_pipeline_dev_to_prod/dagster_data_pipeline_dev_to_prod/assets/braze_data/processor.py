@@ -56,7 +56,7 @@ def aggregate_braze_user_events(context) -> None:
                                            dst_database=db_name,
                                            dst_schema=PROCESSED_SCHEMA)
     bz_data_processor.run()
-    print("aggregattion of Braze user events has been done successfully!")
+    print("Aggregation of Braze user events has been done successfully!")
 
 
 # Collect some statistics of the aggregated_user_events 
